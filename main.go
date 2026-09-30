@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 )
 
 type LogEntry struct {
@@ -30,14 +31,11 @@ func parseLine(line string) (LogEntry, bool) {
 	return LogEntry{}, false
 }
 
-func processFile(path string, level string) (map[string]int, map[string]int) {
+func processFile(path string, level string, combinedEndpoints map[string]int, combinedLevels map[string]int, mu *sync.Mutex, wg *sync.WaitGroup) {
 
+	defer wg.Done()
 	endpointCount := make(map[string]int)
 	levelsCount := make(map[string]int)
-
-	// Job 2: open the file.
-	// If opening fails, print the error and exit.
-	// Then make sure the file gets closed.
 
 	file, err := os.Open(path)
 
@@ -47,10 +45,6 @@ func processFile(path string, level string) (map[string]int, map[string]int) {
 	}
 
 	defer file.Close()
-
-	// Job 3: create a scanner over the file and loop
-	// for as long as there is another line.
-	// Job 4: inside the loop, print the line.
 
 	scanner := bufio.NewScanner(file)
 
@@ -79,7 +73,14 @@ func processFile(path string, level string) (map[string]int, map[string]int) {
 		os.Exit(1)
 	}
 
-	return endpointCount, levelsCount
+	mu.Lock()
+for key, value := range endpointCount {
+    combinedEndpoints[key] += value
+}
+for key, value := range levelsCount {
+    combinedLevels[key] += value
+}
+mu.Unlock()
 }
 
 func main() {
@@ -102,22 +103,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	var mu sync.Mutex
+var wg sync.WaitGroup
 	combinedEndpoints := make(map[string]int)
 	combinedLevels := make(map[string]int)
 
 	for _, path := range paths {
-    endpoints, levels := processFile(path, *l)
-    // merge endpoints into combinedEndpoints
-
-	for key, value := range endpoints {
-        combinedEndpoints[key] += value
-    }
-    // merge levels into combinedLevels
-
-	for key, value := range levels {
-        combinedLevels[key] += value
-    }
+	wg.Add(1)
+    go processFile(path, *l , combinedEndpoints , combinedLevels , &mu , &wg)
 }
+	wg.Wait()
 	for key, value := range combinedEndpoints {
 		fmt.Println(key, value)
 	}
