@@ -21,7 +21,7 @@ func parseLine(line string) (LogEntry, bool) {
 
 	if len(words) >= 4 {
 
-		log := LogEntry{Level :words[1], Endpoint:words[2]}
+		log := LogEntry{Level: words[1], Endpoint: words[2]}
 		return log, true
 	}
 
@@ -37,7 +37,7 @@ func main() {
 
 	f := flag.String("file", "", "parsed file")
 
-	l := flag.String("level" , "" , "Log Level")
+	l := flag.String("level", "", "Log Level")
 
 	flag.Parse()
 
@@ -68,6 +68,10 @@ func main() {
 
 	scanner := bufio.NewScanner(file)
 
+	const maxCapacity = 1024 * 1024
+	buf := make([]byte, 0, maxCapacity)
+	scanner.Buffer(buf, maxCapacity)
+
 	for scanner.Scan() {
 		entry, ok := parseLine(scanner.Text())
 
@@ -75,17 +79,13 @@ func main() {
 			continue
 		}
 
-		
-		
-
 		if *l == "" || entry.Level == *l {
 			endpointCount[entry.Endpoint]++
 			levelsCount[entry.Level]++
-			fmt.Println( entry.Endpoint )
+			/* fmt.Println(entry.Endpoint) */
 		}
-		
+
 	}
-	
 
 	// After the loop: check whether the scanner hit an error.
 	if err := scanner.Err(); err != nil {
@@ -93,10 +93,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	for key , value := range endpointCount {
-			fmt.Println(key , value)
-		}
-	for key , value := range levelsCount {
-			fmt.Println(key , value)
-		}
+	for key, value := range endpointCount {
+		fmt.Println(key, value)
+	}
+	for key, value := range levelsCount {
+		fmt.Println(key, value)
+	}
 }
