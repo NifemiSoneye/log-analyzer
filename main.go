@@ -30,21 +30,7 @@ func parseLine(line string) (LogEntry, bool) {
 	return LogEntry{}, false
 }
 
-func main() {
-	// Job 1: define a string flag called "file", then parse flags.
-
-	// If the user gave no filename, print a message and exit.
-
-	f := flag.String("file", "", "parsed file")
-
-	l := flag.String("level", "", "Log Level")
-
-	flag.Parse()
-
-	if *f == "" {
-		fmt.Fprintln(os.Stderr, errors.New("Empty value"))
-		os.Exit(1)
-	}
+func processFile(path string, level string) (map[string]int, map[string]int) {
 
 	endpointCount := make(map[string]int)
 	levelsCount := make(map[string]int)
@@ -53,7 +39,7 @@ func main() {
 	// If opening fails, print the error and exit.
 	// Then make sure the file gets closed.
 
-	file, err := os.Open(*f)
+	file, err := os.Open(path)
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -79,7 +65,7 @@ func main() {
 			continue
 		}
 
-		if *l == "" || entry.Level == *l {
+		if level == "" || entry.Level == level {
 			endpointCount[entry.Endpoint]++
 			levelsCount[entry.Level]++
 			/* fmt.Println(entry.Endpoint) */
@@ -93,10 +79,50 @@ func main() {
 		os.Exit(1)
 	}
 
-	for key, value := range endpointCount {
+	return endpointCount, levelsCount
+}
+
+func main() {
+	// Job 1: define a string flag called "file", then parse flags.
+
+	// If the user gave no filename, print a message and exit.
+
+	files := flag.String("files", "", "comma seperated files")
+
+	
+
+	l := flag.String("level", "", "Log Level")
+
+	flag.Parse()
+
+	paths := strings.Split(*files, ",")
+
+	if *files == "" {
+		fmt.Fprintln(os.Stderr, errors.New("Empty value"))
+		os.Exit(1)
+	}
+
+	combinedEndpoints := make(map[string]int)
+	combinedLevels := make(map[string]int)
+
+	for _, path := range paths {
+    endpoints, levels := processFile(path, *l)
+    // merge endpoints into combinedEndpoints
+
+	for key, value := range endpoints {
+        combinedEndpoints[key] += value
+    }
+    // merge levels into combinedLevels
+
+	for key, value := range levels {
+        combinedLevels[key] += value
+    }
+}
+	for key, value := range combinedEndpoints {
 		fmt.Println(key, value)
 	}
-	for key, value := range levelsCount {
+	for key, value := range combinedLevels {
 		fmt.Println(key, value)
 	}
+
 }
