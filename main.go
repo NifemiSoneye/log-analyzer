@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -99,7 +98,7 @@ func main() {
 	paths := strings.Split(*files, ",")
 
 	if *files == "" {
-		fmt.Fprintln(os.Stderr, errors.New("Empty value"))
+		fmt.Fprintln(os.Stderr, "usage: loganalyzer -files=<path1,path2,...> [-level=LEVEL]")
 		os.Exit(1)
 	}
 
@@ -113,6 +112,10 @@ var wg sync.WaitGroup
     go processFile(path, *l , combinedEndpoints , combinedLevels , &mu , &wg)
 }
 	wg.Wait()
+
+	if _, ok := combinedLevels[*l] ; !ok  && *l != "" {
+		fmt.Fprintln(os.Stderr, "no lines matched level" , *l)
+	}
 	for key, value := range combinedEndpoints {
 		fmt.Println(key, value)
 	}
